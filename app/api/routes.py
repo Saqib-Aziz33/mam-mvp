@@ -131,11 +131,15 @@ async def run_workflow_async(
 # ============================================
 
 @router.post("/briefs", response_model=dict)
-async def create_brief(request: BriefRequest):
+async def create_brief(
+    request: BriefRequest,
+    background_tasks: BackgroundTasks,
+    auto_start: bool = True
+):
     """
     Create a new marketing brief and start the workflow.
     
-    Returns the run_id and initial status.
+    - **auto_start**: If True (default), automatically starts the workflow after creating brief
     """
     # Generate run ID
     run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid4())[:8]}"
@@ -150,7 +154,17 @@ async def create_brief(request: BriefRequest):
     # Save brief
     save_artifact(run_id, 'brief.json', brief_data, as_json=True)
     
-    # Return initial response
+    # Auto-start workflow if enabled
+    if auto_start:
+        background_tasks.add_task(run_workflow_async, run_id, brief_data, background_tasks)
+        return {
+            "run_id": run_id,
+            "status": "started",
+            "message": "Brief created and workflow started",
+            "brief": brief_data
+        }
+    
+    # Return initial response if not auto-starting
     return {
         "run_id": run_id,
         "status": "initialized",
@@ -162,10 +176,13 @@ async def create_brief(request: BriefRequest):
 @router.post("/briefs/from-file")
 async def create_brief_from_file(
     request: BriefFileRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    auto_start: bool = True
 ):
     """
     Create a brief from file content (JSON or Markdown).
+    
+    - **auto_start**: If True (default), automatically starts the workflow
     """
     try:
         # Generate run ID
@@ -185,10 +202,20 @@ async def create_brief_from_file(
         # Save brief
         save_artifact(run_id, 'brief.json', brief_dict, as_json=True)
         
+        # Auto-start workflow if enabled
+        if auto_start:
+            background_tasks.add_task(run_workflow_async, run_id, brief_dict, background_tasks)
+            return {
+                "run_id": run_id,
+                "status": "started",
+                "message": "Brief loaded and workflow started",
+                "brief": brief_dict
+            }
+        
         return {
             "run_id": run_id,
             "status": "initialized",
-            "message": "Brief loaded from file",
+            "message": "Brief loaded from file. Use /runs/{run_id}/start to begin.",
             "brief": brief_dict
         }
         
