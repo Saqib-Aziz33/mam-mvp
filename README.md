@@ -2,6 +2,22 @@
 
 A CLI-based multi-agent marketing automation system built with LangGraph, LangChain, and OpenAI. This system transforms a marketing brief into a complete content package including research, blog posts, SEO optimization, social media content, and email campaigns.
 
+## Dev Setup
+```bash
+# Create python environment
+python -m venv .venv
+
+# Activate environment
+.venv\Scripts\activate
+
+
+# Install packages from requirements.txt
+pip install -r requirements.txt
+
+# Start server
+python -m uvicorn app.api:app --host localhost --port 8000
+```
+
 ## 🎯 Features
 
 - **Automated Content Pipeline**: From brief to final deliverables in one workflow
