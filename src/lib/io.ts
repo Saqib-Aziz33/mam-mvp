@@ -1,34 +1,35 @@
-import { saveArtifact as saveFile, ensureRunDir } from './logging';
-import fs from 'fs/promises';
-import path from 'path';
+import { saveArtifact as saveToDb, updateRunData } from './logging';
 
 export async function saveFinalPackage(runId: string, pkg: any) {
   const saved: Record<string,string> = {};
 
-  // Save final package JSON
-  saved['package'] = await saveFile(runId, 'final_package.json', JSON.stringify(pkg, null, 2));
+  // Update main run record with full structured data
+  await updateRunData(runId, {
+    research: pkg.research,
+    blog: pkg.blog || pkg.blog_draft,
+    seo: pkg.seo || pkg.seo_optimized_blog,
+    social: pkg.social || pkg.social_assets,
+    email: pkg.email || pkg.email_assets,
+    finalPackage: pkg,
+    status: 'completed'
+  });
 
-  // Save brief
-  saved['brief'] = await saveFile(runId, 'brief.json', JSON.stringify(pkg.brief || {}, null, 2));
+  // Save artifacts for backward compatibility/individual access
+  saved['package'] = await saveToDb(runId, 'final_package.json', JSON.stringify(pkg, null, 2));
+  saved['brief'] = await saveToDb(runId, 'brief.json', JSON.stringify(pkg.brief || {}, null, 2));
+  saved['research'] = await saveToDb(runId, 'research.json', JSON.stringify(pkg.research || {}, null, 2));
 
-  // Save research
-  saved['research'] = await saveFile(runId, 'research.json', JSON.stringify(pkg.research || {}, null, 2));
-
-  // Save blog markdown
   const blogMd = formatBlogMarkdown(pkg.blog || pkg.blog_draft);
-  saved['blog'] = await saveFile(runId, 'blog.md', blogMd);
+  saved['blog'] = await saveToDb(runId, 'blog.md', blogMd);
 
-  // Save seo optimized content
   const seoContent = (pkg.seo && pkg.seo.optimized_content) || (pkg.seo_optimized_blog && pkg.seo_optimized_blog.optimized_content) || '';
-  saved['seo_blog'] = await saveFile(runId, 'seo_blog.md', seoContent || '');
+  saved['seo_blog'] = await saveToDb(runId, 'seo_blog.md', seoContent || '');
 
-  // Save social markdown
   const socialMd = formatSocialMarkdown(pkg.social || pkg.social_assets);
-  saved['social'] = await saveFile(runId, 'social.md', socialMd);
+  saved['social'] = await saveToDb(runId, 'social.md', socialMd);
 
-  // Save email markdown
   const emailMd = formatEmailMarkdown(pkg.email || pkg.email_assets);
-  saved['email'] = await saveFile(runId, 'email.md', emailMd);
+  saved['email'] = await saveToDb(runId, 'email.md', emailMd);
 
   return saved;
 }

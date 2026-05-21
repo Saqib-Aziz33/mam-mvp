@@ -35,6 +35,24 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## Database
+
+The project uses [Drizzle ORM](https://orm.drizzle.team/) with PostgreSQL to store workflow runs, logs, and artifacts.
+
+### Configuration
+
+Ensure you have a `DATABASE_URL` in your `.env.local` or `.env` file:
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/mama
+```
+
+### Database Scripts
+
+- `npm run db:generate`: Generate migrations based on the schema.
+- `npm run db:push`: Push the schema changes directly to the database (useful for development).
+- `npm run db:migrate`: Run the generated migrations against the database.
+- `npm run db:studio`: Open Drizzle Studio to browse your data.
+
 ## Docker
 
 You can run the application using Docker.

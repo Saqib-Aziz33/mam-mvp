@@ -1,22 +1,53 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { db } from './db';
+import { logs, artifacts, runs } from './db/schema';
+import { eq } from 'drizzle-orm';
 
-export async function ensureRunDir(runId: string) {
-  const dir = path.join(process.cwd(), 'runs', runId);
-  await fs.mkdir(dir, { recursive: true });
-  return dir;
+export async function ensureRunRecord(runId: string, brief: any = {}) {
+  const existing = await db.query.runs.findFirst({
+    where: eq(runs.runId, runId),
+  });
+
+  if (!existing) {
+    await db.insert(runs).values({
+      runId,
+      brief,
+      status: 'pending',
+    });
+  }
 }
 
 export async function log(runId: string, level: string, message: string) {
-  const dir = await ensureRunDir(runId);
-  const file = path.join(dir, 'run.log');
-  const ts = new Date().toISOString();
-  await fs.appendFile(file, `[${ts}] ${level.toUpperCase()} ${message}\n`);
+  await ensureRunRecord(runId);
+  await db.insert(logs).values({
+    runId,
+    level,
+    message,
+  });
+  console.log(`[${runId}] ${level.toUpperCase()}: ${message}`);
 }
 
 export async function saveArtifact(runId: string, filename: string, content: string) {
-  const dir = await ensureRunDir(runId);
-  const file = path.join(dir, filename);
-  await fs.writeFile(file, content, 'utf-8');
-  return file;
+  await ensureRunRecord(runId);
+  const type = filename.endsWith('.json') ? 'json' : 'markdown';
+  
+  await db.insert(artifacts).values({
+    runId,
+    filename,
+    content,
+    type,
+  });
+  
+  return `db://${runId}/${filename}`;
+}
+
+export async function updateRunStatus(runId: string, status: string) {
+  await db.update(runs)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(runs.runId, runId));
+}
+
+export async function updateRunData(runId: string, data: Partial<typeof runs.$inferInsert>) {
+  await db.update(runs)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(runs.runId, runId));
 }
