@@ -28,6 +28,8 @@ def human_approval_node(state: Dict[str, Any]) -> Dict[str, Any]:
     Human approval checkpoint.
     
     In CLI mode, this prompts the user for approval.
+    In API mode, this auto-approves by default.
+    Set auto_approve=True in the state to skip manual approval.
     """
     logger = logging.getLogger(f"marketing_system.{state['run_id']}")
     
@@ -52,38 +54,47 @@ def human_approval_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "errors": state.get("errors", []) + [f"Missing content for approval: {', '.join(missing_content)}"]
         }
     
-    print("\n" + "="*60)
-    print("CONTENT REVIEW - APPROVAL REQUIRED")
-    print("="*60)
+    # Check for auto-approve flag (default to True for API)
+    auto_approve = state.get('auto_approve', True)
     
-    # Show research summary
-    if state.get('research_report'):
-        print(format_research_summary(state['research_report']))
-    
-    # Show blog preview
-    if state.get('blog_draft'):
-        print(format_blog_preview(state['blog_draft']))
-    
-    # Show SEO preview
-    if state.get('seo_optimized_blog'):
-        print(format_seo_preview(state['seo_optimized_blog']))
-    
-    # Show social preview
-    if state.get('social_assets'):
-        print(format_social_preview(state['social_assets']))
-    
-    # Show email preview
-    if state.get('email_assets'):
-        print(format_email_preview(state['email_assets']))
-    
-    # Get approval
-    print("\nReview the content above.")
-    approval = input("Approve and finalize? (yes/no): ").strip().lower()
-    
-    approved = approval in ['yes', 'y']
+    # CLI-specific approval (only when auto_approve is False)
+    if not auto_approve:
+        print("\n" + "="*60)
+        print("CONTENT REVIEW - APPROVAL REQUIRED")
+        print("="*60)
+        
+        # Show research summary
+        if state.get('research_report'):
+            print(format_research_summary(state['research_report']))
+        
+        # Show blog preview
+        if state.get('blog_draft'):
+            print(format_blog_preview(state['blog_draft']))
+        
+        # Show SEO preview
+        if state.get('seo_optimized_blog'):
+            print(format_seo_preview(state['seo_optimized_blog']))
+        
+        # Show social preview
+        if state.get('social_assets'):
+            print(format_social_preview(state['social_assets']))
+        
+        # Show email preview
+        if state.get('email_assets'):
+            print(format_email_preview(state['email_assets']))
+        
+        # Get manual approval
+        print("\nReview the content above.")
+        approval = input("Approve and finalize? (yes/no): ").strip().lower()
+        
+        approved = approval in ['yes', 'y']
+    else:
+        # Auto-approve for API mode
+        approved = True
+        logger.info("Auto-approved content (API mode)")
     
     if approved:
-        logger.info("Content approved by user")
+        logger.info("Content approved")
         return {
             **state,
             "approvals": {**state.get("approvals", {}), "final": True},

@@ -111,7 +111,7 @@ def run_workflow(brief_data: dict) -> str:
         # Create brief model
         brief = MarketingBrief(**brief_data)
         
-        # Initialize state
+        # Initialize state with manual approval for CLI
         initial_state = {
             "run_id": run_id,
             "brief": brief,
@@ -124,7 +124,8 @@ def run_workflow(brief_data: dict) -> str:
             "errors": [],
             "status": "initialized",
             "artifacts_path": None,
-            "retry_count": 0
+            "retry_count": 0,
+            "auto_approve": False  # Manual approval in CLI mode
         }
         
         # Create and run workflow

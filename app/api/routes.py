@@ -81,7 +81,8 @@ def parse_brief_content(content: str, file_type: str) -> dict:
 async def run_workflow_async(
     run_id: str,
     brief_data: dict,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    auto_approve: bool = True
 ):
     """Run the marketing workflow asynchronously."""
     from app.utils.logging import setup_logger, log_step
@@ -94,7 +95,7 @@ async def run_workflow_async(
         # Create brief model
         brief = MarketingBrief(**brief_data)
         
-        # Initialize state
+        # Initialize state with auto_approve flag
         initial_state = {
             "run_id": run_id,
             "brief": brief,
@@ -107,7 +108,8 @@ async def run_workflow_async(
             "errors": [],
             "status": "initialized",
             "artifacts_path": None,
-            "retry_count": 0
+            "retry_count": 0,
+            "auto_approve": auto_approve  # Auto-approve in API mode
         }
         
         # Create and run workflow
